@@ -1,12 +1,10 @@
+#include <iostream>
 #include "kalman_filter.h"
+#include <cmath>
 
+using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-
-/* 
- * Please note that the Eigen library does not initialize 
- *   VectorXd or MatrixXd objects with zeros upon creation.
- */
 
 KalmanFilter::KalmanFilter() {}
 
@@ -23,47 +21,79 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
 }
 
 void KalmanFilter::Predict() {
-  /**
-   * TODO: predict the state
-   */
+  // Use the state using the state transition matrix
   x_ = F_ * x_;
+  // Update the covariance matrix using the process noise and state transition matrix
   MatrixXd Ft = F_.transpose();
   P_ = F_ * P_ * Ft + Q_;
+
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
-  /**
-   * TODO: update the state by using Kalman Filter equations
-   */
-  VectorXd z_pred = H_ * x_;
-  VectorXd y = z - z_pred;
+
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
-  MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
-  MatrixXd K = PHt * Si;
-  //new estimate
+
+  VectorXd y = z - H_ * x_;
+  MatrixXd S = H_ * PHt + R_;
+  MatrixXd K = PHt * S.inverse();
+
+  // Update State
   x_ = x_ + (K * y);
+  // Update covariance matrix
   long x_size = x_.size();
-  MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * H_) * P_;
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);  
+  P_ = (I - K*H_) * P_;
+
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-   * TODO: update the state by using Extended Kalman Filter equations
-   */
-  MatrixXd Hj = tools.CalculateJacobian(x_);
-  VectorXd z_pred = Hj * x_;
+  
+  float px = x_(0);
+  float py = x_(1);
+  float vx = x_(2);
+  float vy = x_(3);
+  
+  // Convert the predictions into polar coordinates
+  float rho_p = sqrt(px*px + py*py);
+  float phi_p = atan2(py,px);
+  
+  // Avoid division by zero
+  if (rho_p < 0.0001)
+  {
+    rho_p = 0.0001;
+  }
+    
+  float rho_dot_p = (px*vx + py*vy)/rho_p;
+
+  VectorXd z_pred = VectorXd(3);
+  z_pred << rho_p,
+            phi_p,
+            rho_dot_p;
+
   VectorXd y = z - z_pred;
-  MatrixXd Hjt = Hj.transpose();
-  MatrixXd S = Hj * P_ * Hjt + R_;
-  MatrixXd Si = S.inverse();
-  MatrixXd PHjt = P_ * Hjt;
-  MatrixXd K = PHjt * Si;
-  //new estimate
+  
+  // phi should be between +/- pi
+  if (y(1) > M_PI)
+  {
+    y(1) = y(1) - 2*M_PI;
+  }
+
+  else if (y(1) < -M_PI)
+  {
+    y(1) = y(1) + 2*M_PI;
+  }
+
+  MatrixXd Ht = H_.transpose();
+  MatrixXd PHt = P_ * Ht;
+
+  MatrixXd S = H_ * PHt + R_;
+  MatrixXd K = PHt * S.inverse();
+
+  // Update State
   x_ = x_ + (K * y);
+  // Update covariance matrix
   long x_size = x_.size();
-  MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * Hj) * P_;
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);  
+  P_ = (I - K*H_) * P_;
 }
