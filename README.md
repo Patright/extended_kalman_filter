@@ -1,134 +1,88 @@
-# Extended Kalman Filter Project Starter Code
-Self-Driving Car Engineer Nanodegree Program
-
-In this project you will utilize a kalman filter to estimate the state of a moving object of interest with noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower than the tolerance outlined in the project rubric. 
-
-This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases).
-
-This repository includes two files that can be used to set up and install [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO. Please see the uWebSocketIO Starter Guide page in the classroom within the EKF Project lesson for the required version and installation scripts.
-
-Once the install for uWebSocketIO is complete, the main program can be built and run by doing the following from the project top directory.
-
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./ExtendedKF
-
-Tips for setting up your environment can be found in the classroom lesson for this project.
-
-Note that the programs that need to be written to accomplish the project are src/FusionEKF.cpp, src/FusionEKF.h, kalman_filter.cpp, kalman_filter.h, tools.cpp, and tools.h
-
-The program main.cpp has already been filled out, but feel free to modify it.
-
-Here is the main protocol that main.cpp uses for uWebSocketIO in communicating with the simulator.
+# Extended Kalman Filter in C++
 
 
-**INPUT**: values provided by the simulator to the c++ program
-
-["sensor_measurement"] => the measurement that the simulator observed (either lidar or radar)
+[//]: # (Image References)
 
 
-**OUTPUT**: values provided by the c++ program to the simulator
+[image1]: ./examples/Startposition.png "Startposition"
+[image2]: ./examples/Time_Step_189.png
+[image3]: ./examples/whole.png
+[image4]: ./examples/Fusion_Flow_EKF.png
 
-["estimate_x"] <= kalman filter estimated position x
 
-["estimate_y"] <= kalman filter estimated position y
+## 1. Introduction
 
-["rmse_x"]
+In this project I implemented an EKF (Extended Kalman Filter) in C++. The task is to estimate the state of a moving object using LIDAR and RADAR data measurements in a UNITY programmed simulator.   
+Lidar measurements are red circles, radar measurements are blue circles with an arrow pointing in the direction of the observed angle, and estimation markers are green triangles. The object to track is a blue car moving in a figure eight around the sensor.   
+Here are some images to see how the environment looks like:   
 
-["rmse_y"]
+##### Car in start position with the sensor:  
 
-["rmse_vx"]
+![alt text][image1]
 
-["rmse_vy"]
+##### Car at a certain time step:  
 
----
+![alt text][image2]
 
-## Other Important Dependencies
+##### Overview at the end:  
 
-* cmake >= 3.5
-  * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1 (Linux, Mac), 3.81 (Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
+![alt text][image3]
 
-## Basic Build Instructions
 
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make` 
-   * On windows, you may need to run: `cmake .. -G "Unix Makefiles" && make`
-4. Run it: `./ExtendedKF `
+#### Tasks in this project
 
-## Editor Settings
+- Initialize variables and matrices (x, F, H_laser, H_jacobian, P, etc.)  
+- Initialize the Kalman filter position vector with the first sensor measurements   
+- Modify the F and Q matrices prior to the prediction step based on the elapsed time between measurements   
+- Call the update step for either the lidar or radar sensor measurement
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+#### Resources for the project
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+The github repository includes the code in the src folder:
+- `main.cpp` - communicates with the Term 2 Simulator receiving data measurements, calls a function to run the Kalman filter, calls a function to calculate RMSE
+- `FusionEKF.cpp` - initializes the filter, calls the predict function, calls the update function
+- `kalman_filter.cpp`- defines the predict function, the update function for lidar, and the update function for radar
+- `tools.cpp`- function to calculate RMSE and the Jacobian matrix  
 
-## Code Style
+A Docs folder, which contains details about the structure of the code templates  
+The `CMakeLists.txt` file that will be used compiling the code  
+A data file for testing the extended Kalman filter which the simulator interface provides  
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+#### Explanation of the C++ files:
 
-## Generating Additional Data
+- `Main.cpp` reads in the data and sends a sensor measurement to `FusionEKF.cpp`  
+- `FusionEKF.cpp` takes the sensor data and initializes variables and updates variables. `FusionEKF.cpp` has a variable called `ekf_`, which is an instance of a KalmanFilter class. `ekf_` will hold the matrix and vector values and is used to call the predict and update equations.
+- The KalmanFilter class is defined in `kalman_filter.cpp` and `kalman_filter.h`, which contains functions for the prediction and update steps.
+- `tools.ccp` holds the equation for calculating the Root Mean Squared Error (RMSE) between the location determined by the EKF and the ground truth
 
-This is optional!
+#### Dependencies
 
-If you'd like to generate your own radar and lidar data, see the
-[utilities repo](https://github.com/udacity/CarND-Mercedes-SF-Utilities) for
-Matlab scripts that can generate additional data.
+    cmake: 3.5
+    make: 4.1
+    gcc/g++: 5.4
 
-## Project Instructions and Rubric
 
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
+## 2. Results & Discussion
 
-More information is only accessible by people who are already enrolled in Term 2 (three-term version) or Term 1 (two-term version)
-of CarND. If you are enrolled, see the Project Resources page in the classroom
-for instructions and the project rubric.
+The Kalman Filter consists of an endless loop of Prediction and Measurement Update steps, as shown in the image below:   
 
-## Hints and Tips!
+![alt text][image4]
 
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-* Students have reported rapid expansion of log files when using the term 2 simulator.  This appears to be associated with not being connected to uWebSockets.  If this does occur,  please make sure you are conneted to uWebSockets. The following workaround may also be effective at preventing large log files.
+The first step - at the beginning - is to initialize the states and covariance matrices.   
 
-    + create an empty log file
-    + remove write permissions so that the simulator can't write to log
- * Please note that the ```Eigen``` library does not initialize ```VectorXd``` or ```MatrixXd``` objects with zeros upon creation.
+The prediciton step includes:
+1. Compute the elapsed time deltaT
+2. Use deltaT to compute the new EKF, F and Q matrices
+3. Predict x and P   
 
-## Call for IDE Profiles Pull Requests
+For Measurement Update it is important to distinguish between
+1. Laser Measurement: Position, no Velocity in cartesian coordinates
+2. Radar Measurement: Postion and Velocity in polar coordinates, linear approximation necessary
 
-Help your fellow students!
+Finally the state update, based on prediction and measurement.   
 
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to ensure
-that students don't feel pressured to use one IDE or another.
+I used the RMSE (Root Mean Squared Error) to evaluate the EKF performance. The smaller the value of the RMSE the nearer is the estimated position to the true result (ground truth).
 
-However! We'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
+As a result the position can be estimated better by using both Radar and Lidar contrary to just using one of them. Radar seems to be more accurate for estimating the velocity and Lidar more accurate for estimating the position of the car.
 
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Regardless of the IDE used, every submitted project must
-still be compilable with cmake and make.
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+It can be seen that Kalman Filters combine somewhat inaccurate sensor measurements with somewhat inaccurate predictions of motion to get a filtered location estimate, that is better than any estimate that comes from only sensor reading or only knowledge about movement.

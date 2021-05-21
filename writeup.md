@@ -44,7 +44,6 @@ The github repository includes the code in the src folder:
 - `kalman_filter.cpp`- defines the predict function, the update function for lidar, and the update function for radar
 - `tools.cpp`- function to calculate RMSE and the Jacobian matrix  
 
-A README file with instructions on compiling the code  
 A Docs folder, which contains details about the structure of the code templates  
 The `CMakeLists.txt` file that will be used compiling the code  
 A data file for testing the extended Kalman filter which the simulator interface provides  
